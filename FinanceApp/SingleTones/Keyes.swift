@@ -27,6 +27,7 @@ class Keyes {
     
     let locale = "RU_ru"
     let dateFormat = "E, d MMMM, yyyy"
+    let expensDateFormat = "dd.MM.yy"
     
     // MARK: SystemImages
     

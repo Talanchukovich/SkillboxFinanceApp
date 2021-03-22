@@ -10,15 +10,22 @@ import Foundation
 extension Formatter {
     static let withSeparator: NumberFormatter = {
         let formatter = NumberFormatter()
+        formatter.locale = NSLocale.current
         formatter.numberStyle = .decimal
         formatter.groupingSeparator = " "
-        formatter.locale = Locale(identifier: Keyes.shared.locale)
         return formatter
     }()
     
     static let dateFormatted: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = Keyes.shared.dateFormat
+        formatter.locale = Locale(identifier: Keyes.shared.locale)
+        return formatter
+    }()
+    
+    static let expensDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = Keyes.shared.expensDateFormat
         formatter.locale = Locale(identifier: Keyes.shared.locale)
         return formatter
     }()
@@ -31,13 +38,28 @@ extension Numeric {
 }
 
 extension Date {
-    var dateFormated: String {
+    var dateFormated: String? {
         Formatter.dateFormatted.string(from: self)
+    }
+    var expensDateFormated: String {
+        Formatter.expensDateFormatter.string(from: self)
     }
 }
 
 extension String {
+    var filtred: String{
+        self.filter{$0 != " " && $0 != "Р"}
+    }
     var stringWithSeparator: String {
-        Formatter.withSeparator.string(for: Double(self)) ?? ""
+        let str = Formatter.withSeparator.string(for: Double(self.filtred)) ?? ""
+        return str + " Р"
+    }
+    
+    var buttonTitelAttributed: NSAttributedString {
+        return NSAttributedString(string: self, attributes: TextAttributes.shared.buttonTitleAttributes)
+    }
+    func attributed(attributes: [NSAttributedString.Key : Any]?) -> NSAttributedString{
+        return NSAttributedString(string: self, attributes: attributes)
     }
 }
+

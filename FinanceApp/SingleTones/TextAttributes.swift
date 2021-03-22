@@ -21,7 +21,6 @@ class TextAttributes {
     static let shared = TextAttributes()
     private init() {}
     
-    // MARK: NavigationMC TextAttributes
     
    let normalAttributes = [NSAttributedString.Key
                                 .font: UIFont(name: Keyes.shared.font_SFProDisplay_Medium, size: 11) as Any,
@@ -33,9 +32,6 @@ class TextAttributes {
                                 .kern: 0.13,
                                 .foregroundColor: UIColor(red: 0, green: 0.478, blue: 1, alpha: 1)]
 
-    
-    
-    // MARK: IncomeVC TextAttributes
     
     let currentLabelAttributes = [NSAttributedString.Key
                                 .font: UIFont(name: Keyes.shared.font_SFProDisplay_Medium, size: 16) as Any,
@@ -54,19 +50,18 @@ class TextAttributes {
     
     
     
-    
-    let buttontitleAttributes = [NSAttributedString.Key
+    let buttonTitleAttributes = [NSAttributedString.Key
                                 .font: UIFont(name: Keyes.shared.font_SFProDisplay_Medium, size: 15) as Any,
                                 .kern: -0.22,
                                 .paragraphStyle: paragraphStyle(lineHeightMultiple: 0.89),
                                 .foregroundColor: UIColor(red: 1, green: 1, blue: 1, alpha: 1)]
     
-    let incomCellLabelsAttributes = [NSAttributedString.Key
+    let cellLabelsAttributes = [NSAttributedString.Key
                                 .font: UIFont(name: Keyes.shared.font_SFProDisplay_Medium, size: 16) as Any,
                                 .kern: 0.19,
                                 .foregroundColor: UIColor(red: 0, green: 0, blue: 0, alpha: 1)]
     
-    let tfvLabelAttributes = [NSAttributedString.Key
+    let labelAttributes = [NSAttributedString.Key
                                 .font: UIFont(name: Keyes.shared.font_SFProDisplay_Medium, size: 11) as Any,
                                 .kern: -0.19,
                                 .paragraphStyle: paragraphStyle(lineHeightMultiple: 1.45),
@@ -84,12 +79,17 @@ class TextAttributes {
                                 .paragraphStyle: paragraphStyle(lineHeightMultiple: 1),
                                 .foregroundColor: UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1)]
     
-    let adExpensLabelAttributex = [NSAttributedString.Key
-                                    .font: UIFont(name: Keyes.shared.font_HelveticaNeueCyr_Black, size: 22) as Any,
+    let adExpensLabelAttributes = [NSAttributedString.Key
+                                .font: UIFont(name: Keyes.shared.font_HelveticaNeueCyr_Black, size: 22) as Any,
                                 .foregroundColor: UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 1)]
     
-    let adExspensBtnAttributex = [NSAttributedString.Key
-                                    .font: UIFont(name: Keyes.shared.font_SFProDisplay_Medium, size: 22) as Any,
+    let exspensButtonTitleAttributes = [NSAttributedString.Key
+                                .font: UIFont(name: Keyes.shared.font_SFProDisplay_Medium, size: 22) as Any,
                                 .foregroundColor: UIColor(red: 1, green: 1, blue: 1, alpha: 1)]
+    
+    let tabelHeaderLabelsAttributes = [NSAttributedString.Key
+                                        .font: UIFont(name: Keyes.shared.font_HelveticaNeueCyr_Black, size: 13) as Any,
+                                       .kern: 0.13,
+                                       .foregroundColor: UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)]
 }
 

@@ -9,9 +9,8 @@
 import UIKit
 
 extension CategoriesVC: ObserverProtocol {
-    
-    func loadNewData(data: Any) {
-        categories = data as? [String] ?? []
+    func loadNewData(incomes: [Income], expensCategories: [ExpensCategory], expenses: [Expens]) {
+        categories = expensCategories
     }
 }
 
@@ -19,30 +18,29 @@ class CategoriesVC: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        ExpencesViewModel.expencesViewModel.getData()
         createMainView()
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
         navigationController?.isNavigationBarHidden = true
-        ExpencesViewModel.expencesViewModel.addObserver(self)
-        ExpencesViewModel.expencesViewModel.getData()
+        CoreDataManager.coreDataManager.addObserver(self)
+        CoreDataManager.coreDataManager.getData()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(true)
         navigationController?.isNavigationBarHidden = false
-        ExpencesViewModel.expencesViewModel.removeObserver(self)
+        CoreDataManager.coreDataManager.removeObserver(self)
     }
 
     // MARK: categories
     
-    var categories: [String] = [] {
+    var categories: [ExpensCategory] = [] {
         didSet{
             DispatchQueue.main.async {
                 self.categoriesTabelView.reloadData()
-                
+
             }
         }
     }
@@ -55,7 +53,7 @@ class CategoriesVC: UIViewController {
     let openButton = UIButton()
     let openButtonLabel = UILabel()
     private var alertTextfield = UITextField()
-    private var categoryIndex = 0
+    private var category: ExpensCategory?
     
    
     func createMainView(){
@@ -101,7 +99,7 @@ class CategoriesVC: UIViewController {
         
         // MARK: openButtonLabel
 
-        openButtonLabel.attributedText = NSAttributedString(string: "Добавить категорию расходов", attributes: TextAttributes.shared.buttontitleAttributes)
+        openButtonLabel.attributedText = NSAttributedString(string: "Добавить категорию расходов", attributes: TextAttributes.shared.buttonTitleAttributes)
         openButton.addSubview(openButtonLabel)
         openButtonLabel.snp.makeConstraints{ make in
             make.centerX.equalToSuperview()
@@ -132,12 +130,11 @@ class CategoriesVC: UIViewController {
         let menuVC = UIStoryboard(name: Keyes.shared.storyBoardIdentifier, bundle: nil).instantiateViewController(withIdentifier: Keyes.shared.menuVCIdentifier) as! MenuVC
         menuVC.modalPresentationStyle = .custom
         menuVC.transitioningDelegate = self
-        
         switch menuMode{
         case .adding:
-            menuVC.createMenuViewes(menuType: .expensCategory, menuMode: menuMode, editingText: "", index: categoryIndex)
+            menuVC.createMenuViewes(menuType: .expensCategory, menuMode: menuMode, model: category as Any)
         case .editing:
-            menuVC.createMenuViewes(menuType: .expensCategory, menuMode: menuMode, editingText: categories[categoryIndex], index: categoryIndex)
+            menuVC.createMenuViewes(menuType: .expensCategory, menuMode: menuMode, model: category as Any)
         }
         present(menuVC, animated: true, completion: nil)
         
@@ -164,7 +161,7 @@ extension CategoriesVC: UITableViewDelegate, UITableViewDataSource {
         cell.accessoryType = .disclosureIndicator
         cell.accessoryView = UIImageView(image: UIImage(systemName: Keyes.shared.chevron_forward))
         let categoryCell = categories[indexPath.row]
-        cell.categoryExpLabel.text = categoryCell
+        cell.categoryExpLabel.text = categoryCell.categoryName
         return cell
     }
     
@@ -175,15 +172,16 @@ extension CategoriesVC: UITableViewDelegate, UITableViewDataSource {
             let deletAction = UIAction(title: "Удалить",
                                        image: UIImage(systemName: Keyes.shared.delete_left),
                                        identifier: nil,
-                                       attributes: .destructive) {_ in
-                ExpencesViewModel.expencesViewModel.deletData(index: indexPath.row)
+                                       attributes: .destructive) { [weak self]_ in
+                guard let self = self else {return}
+                CoreDataManager.coreDataManager.deletData(model: self.categories[indexPath.row])
                
             }
             let editAction = UIAction(title: "Редактировать",
                                       image: UIImage(systemName: Keyes.shared.text_redaction),
                                       identifier: nil) {[weak self] _ in
                 guard let self = self else {return}
-                self.categoryIndex = indexPath.row
+                self.category = self.categories[indexPath.row]
                 self.openMenuVC(menuMode: .editing)
             }
             return UIMenu(children: [deletAction, editAction])
@@ -192,9 +190,10 @@ extension CategoriesVC: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         categoriesTabelView.deselectRow(at: indexPath, animated: true)
-        let ExpVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "ExpensesVC") as ExpensesVC
+        let expensesVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "ExpensesVC") as ExpensesVC
+        expensesVC.category = CoreDataManager.coreDataManager.coreDataExpensCategories[indexPath.row]
         navigationController?.navigationBar.backItem?.title = ""
-        navigationController?.pushViewController(ExpVC, animated: true)
+        navigationController?.pushViewController(expensesVC, animated: true)
     }
     
 }

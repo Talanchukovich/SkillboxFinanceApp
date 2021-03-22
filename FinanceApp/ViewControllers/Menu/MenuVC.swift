@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import CoreData
 
 enum MenuType {
     case income
@@ -36,7 +37,7 @@ class MenuVC: UIViewController {
             let keyboardRectangle = keyboardFrame.cgRectValue
             let keyboardHeight = keyboardRectangle.height
                 KeyboardProperties.shared.keyboardHeight = keyboardHeight
-            Notificator.shared.notify(data: keyboardHeight)
+            Notificator.shared.notify(keyboardHeight: keyboardHeight)
             }
     }
     
@@ -53,30 +54,18 @@ class MenuVC: UIViewController {
     
     let button = UIButton()
     
-    var index = 0
-    var textFieldText = ""
     var menuTypeIsNow: MenuType?
-
+    var model: Any?
 
 
     // MARK: Creating MenuViewes
+    //func createMenuViewes(menuType: MenuType, menuMode: MenuMode, editingText: String, index: Int)
     
-    func createMenuViewes(menuType: MenuType, menuMode: MenuMode, editingText: String, index: Int){
+    func createMenuViewes(menuType: MenuType, menuMode: MenuMode, model: Any){
+        
         self.menuTypeIsNow = menuType
-        self.index = index
-        var textFieldText: String {
-            switch menuMode{
-            case .adding:
-                return ""
-            case .editing:
-                return editingText
-            
-            }
-        }
-        self.textFieldText = textFieldText
-        
-        
-        
+        self.model = model
+
         var labelText: String {
             switch menuType {
             case .income:
@@ -85,6 +74,25 @@ class MenuVC: UIViewController {
                 return "Наименование"
             case .expens:
                 return "Наименование"
+            }
+        }
+        
+        var editingText: String {
+            switch menuMode{
+            case .adding:
+                return ""
+            case .editing:
+                switch menuType{
+                case .income:
+                    guard let model = model as? Income else {return ""}
+                    return model.income?.stringWithSeparator ?? ""
+                case .expensCategory:
+                    guard let model = model as? ExpensCategory else {return ""}
+                    return model.categoryName ?? ""
+                case .expens:
+                    guard let model = model as? Expens else {return ""}
+                    return model.expensName ?? ""
+                }
             }
         }
         
@@ -147,7 +155,7 @@ class MenuVC: UIViewController {
         // MARK:  firstLabel
         
         firstLabel.isHidden = true
-        firstLabel.attributedText = NSAttributedString(string: labelText, attributes: TextAttributes.shared.tfvLabelAttributes)
+        firstLabel.attributedText = NSAttributedString(string: labelText, attributes: TextAttributes.shared.labelAttributes)
         view.addSubview(firstLabel)
         firstLabel.snp.makeConstraints {make in
             make.left.equalToSuperview().offset(16)
@@ -204,7 +212,7 @@ class MenuVC: UIViewController {
         // MARK:  secondLabel
         
         secondLabel.isHidden = true
-        secondLabel.attributedText = NSAttributedString(string: "Сумма", attributes: TextAttributes.shared.tfvLabelAttributes)
+        secondLabel.attributedText = NSAttributedString(string: "Сумма", attributes: TextAttributes.shared.labelAttributes)
         secondViewes.addSubview(secondLabel)
         secondLabel.snp.makeConstraints {make in
             make.top.equalToSuperview()
@@ -216,7 +224,7 @@ class MenuVC: UIViewController {
         secondTextField.delegate = self
         secondTextField.keyboardType = .decimalPad
         secondTextField.clearButtonMode = .whileEditing
-        secondTextField.attributedText = NSAttributedString(string: editingText, attributes: TextAttributes.shared.textFieldTextAttributes)
+        secondTextField.attributedText = NSAttributedString(string: (model as? Expens)?.expens ?? "", attributes: TextAttributes.shared.textFieldTextAttributes)
         secondTextField.attributedPlaceholder = NSAttributedString(string: "Сумма", attributes: TextAttributes.shared.textFieldPlaceHolderAttributes)
         secondTextField.addAction(.init(){[weak self]_ in
                                     guard let self = self else {return}
@@ -257,33 +265,6 @@ class MenuVC: UIViewController {
             make.centerX.equalToSuperview()
             make.width.equalTo(344)
             make.height.equalTo(48)
-        }
-    }
-    
-    // MARK: buttonAction
-    
-    func buttonAction(menuType: MenuType, menuMode: MenuMode){
-        guard let firstText = firstTextField.text else {return}
-        guard let secondText = secondTextField.text else {return}
-        switch menuMode{
-        case .adding:
-            switch menuType{
-            case .income:
-                IncomeViewModel.incomeViewModel.adData(income: firstText)
-            case .expensCategory:
-                ExpencesViewModel.expencesViewModel.adData(category: firstText)
-            case .expens:
-                print("")
-            }
-        case .editing:
-            switch menuType{
-            case .income:
-                IncomeViewModel.incomeViewModel.editData(index: index, income: firstText)
-            case .expensCategory:
-                ExpencesViewModel.expencesViewModel.editData(index: index, category: firstText)
-            case .expens:
-                print("")
-            }
         }
     }
     
@@ -345,6 +326,20 @@ class MenuVC: UIViewController {
               let secondText = secondTextField.text,
               let menuTypeIsNow = menuTypeIsNow else {return}
         updateView(inputModelView: InputModelView(menuType: menuTypeIsNow, firstTextFieldIsEmpty: firstText.isEmpty, secondTextFieldIsEmpty: secondText.isEmpty))
+    }
+    
+    // MARK: buttonAction
+    
+    
+    func buttonAction(menuType: MenuType, menuMode: MenuMode){
+        guard let firstText = firstTextField.text else {return}
+        guard let secondText = secondTextField.text else {return}
+        switch menuMode{
+        case .adding:
+            CoreDataManager.coreDataManager.adData(menuType: menuTypeIsNow!, newName: firstText, newMoney: secondText, model: model as? ExpensCategory ?? "")
+        case .editing:
+            CoreDataManager.coreDataManager.editData(model: model as! NSManagedObject, newName: firstText, newMoney: secondText)
+        }
     }
     
     func dismissVC(menuType: MenuType, menuMode: MenuMode){

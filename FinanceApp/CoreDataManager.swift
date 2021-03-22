@@ -37,25 +37,21 @@ class CoreDataManager: Notificator {
             let newIncome = Income(context: context)
             newIncome.income = newName
             newIncome.incomeDate = Date()
-            print("newIncome \(newName)")
         case .expensCategory:
             let newCategoryExpens = ExpensCategory(context: context)
             newCategoryExpens.categoryName = newName
-            print("newCategoryExpens")
         case .expens:
             let newExpens = Expens(context: context)
             newExpens.expensName = newName
             newExpens.expensDate = Date()
             newExpens.expens = newMoney
             newExpens.category = model as? ExpensCategory
-            print("newExpens")
         }
         do {
             try context.save()
             getData()
-            print("Saved")
         }catch let error as NSError {
-            print("Not save \(error), \(error.userInfo)")
+            print("Not added \(error), \(error.userInfo)")
         }
     }
     

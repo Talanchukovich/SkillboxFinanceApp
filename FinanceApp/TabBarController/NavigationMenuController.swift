@@ -9,7 +9,6 @@ import UIKit
 
 class NavigationMenuController: UITabBarController {
     
-    let textAttributes = TextAttributes()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -42,8 +41,8 @@ class NavigationMenuController: UITabBarController {
     
     func tabBarItemSettings () {
         tabBar.barTintColor = .white
-        UITabBarItem.appearance().setTitleTextAttributes(textAttributes.normalAttributes, for: .normal)
-        UITabBarItem.appearance().setTitleTextAttributes(textAttributes.selectedAttributes, for: .selected)
+        UITabBarItem.appearance().setTitleTextAttributes(TextAttributes.shared.normalAttributes, for: .normal)
+        UITabBarItem.appearance().setTitleTextAttributes(TextAttributes.shared.selectedAttributes, for: .selected)
     }
     
     // Create tabBarItems for all ViewControllers

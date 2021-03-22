@@ -16,11 +16,11 @@ enum TabItems: String, CaseIterable {
     var viewController: UIViewController {
         switch self {
         case .income:
-            return IncomeViewController()
+            return IncomesVC()
         case .charts:
             return ChartsViewController()
         case .expenses:
-            return ExpensesViewController()
+            return CategoriesVC()
         }
     }
     
