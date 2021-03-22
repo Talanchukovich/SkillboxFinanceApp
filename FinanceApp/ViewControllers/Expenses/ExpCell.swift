@@ -1,0 +1,23 @@
+//
+//  ExpCell.swift
+//  FinanceApp
+//
+//  Created by Андрей Таланчук on 18.03.2021.
+//
+
+import UIKit
+
+class ExpCell: UITableViewCell {
+
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        // Initialization code
+    }
+
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+
+        // Configure the view for the selected state
+    }
+
+}
