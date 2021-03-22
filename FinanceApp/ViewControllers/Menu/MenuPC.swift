@@ -7,7 +7,7 @@
 
 import UIKit
 
-extension MenuPC: KeyboardChangeProtocol{
+extension MenuPC: ObserverProtocol{
     func transferKeyboardHeight(keyboardHeight: CGFloat) {
         changeFrame(keyboardHeight: keyboardHeight)
     }
@@ -29,7 +29,6 @@ class MenuPC: UIPresentationController {
                 guard let theView = containerView else {
                     return CGRect.zero
                 }
-
                 return CGRect(x: 0, y: theView.bounds.height - KeyboardProperties.shared.keyboardHeight - 155 - KeyboardProperties.shared.secondTxtFieldHeit, width: theView.bounds.width, height: theView.bounds.height - keyboardHeight - 155 - KeyboardProperties.shared.secondTxtFieldHeit)
             }
         }
