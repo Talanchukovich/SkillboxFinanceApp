@@ -6,40 +6,42 @@
 //
 
 import UIKit
-
-extension MenuPC: ObserverProtocol{
-    func transferKeyboardHeight(keyboardHeight: CGFloat) {
-        changeFrame(keyboardHeight: keyboardHeight)
-    }
-    
-    
-}
+import RxSwift
 
 class MenuPC: UIPresentationController {
     
+    
     let greyView = UIView()
+    let bag = DisposeBag()
+    var keyboardHeight: CGFloat = 0
     
-    @objc func dismissVC(){
-        self.presentedViewController.dismiss(animated: true, completion: nil)
+    func overrideKeyboardHeight(){
+        FinanceViewModel.viewModel.keyboardHeight
+            .subscribe(onNext: {[weak self] keyboardHeight in
+                self?.keyboardHeight = keyboardHeight
+            }).disposed(by: bag)
     }
     
-    func changeFrame(keyboardHeight: CGFloat){
-        var frameOfPresentedViewInContainerView: CGRect {
-            get {
-                guard let theView = containerView else {
-                    return CGRect.zero
+    func changeFrameOfPresentedView(){
+        FinanceViewModel.viewModel.keyboardHeight
+            .subscribe(onNext: {[weak self] keyboardHeight in
+                var frameOfPresentedViewInContainerView: CGRect {
+                    get {
+                        guard let theView = self?.containerView else {
+                            return CGRect.zero
+                        }
+                        return CGRect(x: 0, y: theView.bounds.height - keyboardHeight - 155 - FinanceViewModel.viewModel.secondTxtFieldHeit, width: theView.bounds.width, height: theView.bounds.height)
+                    }
                 }
-                return CGRect(x: 0, y: theView.bounds.height - KeyboardProperties.shared.keyboardHeight - 155 - KeyboardProperties.shared.secondTxtFieldHeit, width: theView.bounds.width, height: theView.bounds.height - keyboardHeight - 155 - KeyboardProperties.shared.secondTxtFieldHeit)
-            }
-        }
-        UIView.animate(withDuration: 0.1){
-            self.containerViewDidLayoutSubviews()
-        }
+                UIView.animate(withDuration: 0.1){
+                    self?.containerViewDidLayoutSubviews()
+                }
+            }).disposed(by: bag)
     }
-    
     
     override init(presentedViewController: UIViewController, presenting presentingViewController: UIViewController?) {
         super.init(presentedViewController: presentedViewController, presenting: presentingViewController)
+        overrideKeyboardHeight()
         greyView.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
         let layer0 = CALayer()
         layer0.backgroundColor = UIColor(red: 0, green: 0, blue: 0, alpha: 1).cgColor
@@ -53,16 +55,18 @@ class MenuPC: UIPresentationController {
         greyView.isUserInteractionEnabled = true
         let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(dismissVC))
         greyView.addGestureRecognizer(tapGestureRecognizer)
-       
-        }
+    }
+    
+    @objc func dismissVC(){
+        self.presentedViewController.dismiss(animated: true, completion: nil)
+    }
         
     override var frameOfPresentedViewInContainerView: CGRect {
         get {
             guard let theView = containerView else {
                 return CGRect.zero
             }
-
-            return CGRect(x: 0, y: theView.bounds.height - KeyboardProperties.shared.keyboardHeight - 155 - KeyboardProperties.shared.secondTxtFieldHeit, width: theView.bounds.width, height: theView.bounds.height - KeyboardProperties.shared.keyboardHeight - 155 - KeyboardProperties.shared.secondTxtFieldHeit)
+            return CGRect(x: 0, y: theView.bounds.height - keyboardHeight - 155 - FinanceViewModel.viewModel.secondTxtFieldHeit, width: theView.bounds.width, height: theView.bounds.height)
         }
     }
     
@@ -72,25 +76,26 @@ class MenuPC: UIPresentationController {
                 self.greyView.alpha = 0
             }, completion: { (UIViewControllerTransitionCoordinatorContext) in
                 self.greyView.removeFromSuperview()
-                Notificator.shared.removeObserver(self)
             })
         }
-        override func presentationTransitionWillBegin() {
-            self.greyView.alpha = 0
-            self.containerView?.addSubview(greyView)
-            self.presentedViewController.transitionCoordinator?.animate(alongsideTransition: { (UIViewControllerTransitionCoordinatorContext) in
-                self.greyView.alpha = 0.5
-            }, completion: { (UIViewControllerTransitionCoordinatorContext) in
-                Notificator.shared.addObserver(self)
-            })
-        }
-        override func containerViewWillLayoutSubviews() {
-            super.containerViewWillLayoutSubviews()
-            presentedView!.layer.masksToBounds = true
-        }
-        override func containerViewDidLayoutSubviews() {
-            super.containerViewDidLayoutSubviews()
-            self.presentedView?.frame = frameOfPresentedViewInContainerView
-            greyView.frame = containerView!.bounds
-        }
+    override func presentationTransitionWillBegin() {
+        self.greyView.alpha = 0
+        self.containerView?.addSubview(greyView)
+        self.presentedViewController.transitionCoordinator?.animate(alongsideTransition: { (UIViewControllerTransitionCoordinatorContext) in
+            self.greyView.alpha = 0.5
+        }, completion: {[weak self] (UIViewControllerTransitionCoordinatorContext) in
+           self?.changeFrameOfPresentedView()
+        })
+    }
+    override func containerViewWillLayoutSubviews() {
+        super.containerViewWillLayoutSubviews()
+        presentedView!.layer.masksToBounds = true
+    }
+    override func containerViewDidLayoutSubviews() {
+        super.containerViewDidLayoutSubviews()
+        self.presentedView?.frame = frameOfPresentedViewInContainerView
+        greyView.frame = containerView!.bounds
+    }
+    
+    
 }

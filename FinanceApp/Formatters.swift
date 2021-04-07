@@ -56,10 +56,9 @@ extension String {
     }
     
     var buttonTitelAttributed: NSAttributedString {
-        return NSAttributedString(string: self, attributes: TextAttributes.shared.buttonTitleAttributes)
+        NSAttributedString(string: self, attributes: TextAttributes.shared.buttonTitleAttributes)
     }
     func attributed(attributes: [NSAttributedString.Key : Any]?) -> NSAttributedString{
-        return NSAttributedString(string: self, attributes: attributes)
+         NSAttributedString(string: self, attributes: attributes)
     }
 }
-

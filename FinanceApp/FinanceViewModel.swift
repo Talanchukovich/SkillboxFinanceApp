@@ -1,37 +1,69 @@
 //
-//  CoreDataManager.swift
+//  FinanceViewModel.swift
 //  FinanceApp
 //
-//  Created by Андрей Таланчук on 22.03.2021.
+//  Created by Андрей Таланчук on 07.04.2021.
 //
 
 import Foundation
 import UIKit
 import CoreData
+import RxSwift
+import RxCocoa
 
-class CoreDataManager: Notificator {
+class FinanceViewModel{
     
-    static let coreDataManager = CoreDataManager()
+    static let viewModel = FinanceViewModel()
+    
+    lazy var incomes = PublishSubject<[Income]>()
+    lazy var balance = PublishSubject<NSAttributedString>()
+    lazy var expensCategories = PublishSubject<[ExpensCategory]>()
+    lazy var expenses = PublishSubject<[Expens]>()
+    lazy var keyboardHeight = PublishRelay<CGFloat>()
+    var secondTxtFieldHeit: CGFloat = 0
+    
+    // MARK: - Core Data
     
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
     var coreDataIncomes = [Income]()
     var coreDataExpensCategories = [ExpensCategory]()
     var coreDataExspenses = [Expens]()
+    var category: ExpensCategory?
     
-    func getData() {
+    // MARK: - getData
+    
+    func getData(menuType: MenuType) {
         do {
-            coreDataIncomes = try context.fetch(Income.fetchRequest())
-            coreDataExpensCategories = try context.fetch(ExpensCategory.fetchRequest())
-            coreDataExspenses = try context.fetch(Expens.fetchRequest())
-            notify(incomes: coreDataIncomes, expensCategories: coreDataExpensCategories, expenses: coreDataExspenses)
+            switch menuType{
+            case .income:
+                coreDataIncomes = try context.fetch(Income.fetchRequest())
+                let newBalance = String(coreDataIncomes
+                    .map{Double($0.income?.filtred ?? "0")}
+                    .compactMap{$0}
+                    .reduce(0.0, +))
+                    .stringWithSeparator
+                    .attributed(attributes: TextAttributes.shared.balanceLabelAttributes)
+                incomes.onNext(coreDataIncomes)
+                balance.onNext(newBalance)
+            
+            case .expensCategory:
+                coreDataExpensCategories = try context.fetch(ExpensCategory.fetchRequest())
+                expensCategories.onNext(coreDataExpensCategories)
+            
+            case .expens:
+                coreDataExspenses = try context.fetch(Expens.fetchRequest())
+                expenses.onNext(coreDataExspenses.filter{$0.category == category})
+            }
             
         } catch let error as NSError {
             print("Not get data == \(error), \(error.userInfo)")
         }
     }
     
-    func adData(menuType: MenuType, newName: String, newMoney: String, model: Any){
+    // MARK: - adData
+    
+    func adData(menuType: MenuType, newName: String, newMoney: String){
         switch menuType{
         case .income:
             let newIncome = Income(context: context)
@@ -45,28 +77,32 @@ class CoreDataManager: Notificator {
             newExpens.expensName = newName
             newExpens.expensDate = Date()
             newExpens.expens = newMoney
-            newExpens.category = model as? ExpensCategory
+            newExpens.category = category
         }
         do {
             try context.save()
-            getData()
+            getData(menuType: menuType)
         }catch let error as NSError {
             print("Not added \(error), \(error.userInfo)")
         }
     }
     
-    func deletData(model: NSManagedObject) {
+    // MARK: - deletData
+    
+    func deletData(model: NSManagedObject, menuType: MenuType) {
         context.delete(model)
         
         do {
             try context.save()
-            getData()
+            getData(menuType: menuType)
         }catch let error as NSError {
             print("Not deleted \(error), \(error.userInfo)")
         }
     }
     
-    func editData(model: NSManagedObject, newName: String, newMoney: String){
+    // MARK: - editData
+    
+    func editData(model: NSManagedObject, newName: String, newMoney: String, menuType: MenuType){
         switch model{
         case model as? Income:
             guard let expensModel = model as? Income else {return}
@@ -83,7 +119,7 @@ class CoreDataManager: Notificator {
         }
         do {
             try context.save()
-            getData()
+            getData(menuType: menuType)
         } catch let error as NSError {
             print("Not edited == \(error), \(error.userInfo)")
         }

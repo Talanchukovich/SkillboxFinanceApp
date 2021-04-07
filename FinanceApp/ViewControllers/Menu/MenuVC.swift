@@ -36,8 +36,7 @@ class MenuVC: UIViewController {
         if let keyboardFrame: NSValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
             let keyboardRectangle = keyboardFrame.cgRectValue
             let keyboardHeight = keyboardRectangle.height
-                KeyboardProperties.shared.keyboardHeight = keyboardHeight
-            Notificator.shared.notify(keyboardHeight: keyboardHeight)
+            FinanceViewModel.viewModel.keyboardHeight.accept(keyboardHeight)
             }
     }
     
@@ -55,17 +54,15 @@ class MenuVC: UIViewController {
     let button = UIButton()
     
     var menuTypeIsNow: MenuType?
-    var model: Any?
+    var model: NSManagedObject?
 
 
     // MARK: Creating MenuViewes
-    //func createMenuViewes(menuType: MenuType, menuMode: MenuMode, editingText: String, index: Int)
     
-    func createMenuViewes(menuType: MenuType, menuMode: MenuMode, model: Any){
+    func createMenuViewes(menuType: MenuType, menuMode: MenuMode){
         
         self.menuTypeIsNow = menuType
-        self.model = model
-
+        
         var labelText: String {
             switch menuType {
             case .income:
@@ -224,7 +221,7 @@ class MenuVC: UIViewController {
         secondTextField.delegate = self
         secondTextField.keyboardType = .decimalPad
         secondTextField.clearButtonMode = .whileEditing
-        secondTextField.attributedText = NSAttributedString(string: (model as? Expens)?.expens ?? "", attributes: TextAttributes.shared.textFieldTextAttributes)
+        secondTextField.attributedText = NSAttributedString(string: (model as? Expens)?.expens?.stringWithSeparator ?? "", attributes: TextAttributes.shared.textFieldTextAttributes)
         secondTextField.attributedPlaceholder = NSAttributedString(string: "Сумма", attributes: TextAttributes.shared.textFieldPlaceHolderAttributes)
         secondTextField.addAction(.init(){[weak self]_ in
                                     guard let self = self else {return}
@@ -336,9 +333,10 @@ class MenuVC: UIViewController {
         guard let secondText = secondTextField.text else {return}
         switch menuMode{
         case .adding:
-            CoreDataManager.coreDataManager.adData(menuType: menuTypeIsNow!, newName: firstText, newMoney: secondText, model: model as? ExpensCategory ?? "")
+            FinanceViewModel.viewModel.adData(menuType: menuTypeIsNow!, newName: firstText, newMoney: secondText)
         case .editing:
-            CoreDataManager.coreDataManager.editData(model: model as! NSManagedObject, newName: firstText, newMoney: secondText)
+            guard let model = model else {return}
+            FinanceViewModel.viewModel.editData(model: model, newName: firstText, newMoney: secondText, menuType: menuType)
         }
     }
     

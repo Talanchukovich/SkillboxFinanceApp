@@ -6,41 +6,26 @@
 //
 
 import UIKit
-
-extension ExpensesVC: ObserverProtocol{
-    func loadNewData(incomes: [Income], expensCategories: [ExpensCategory], expenses: [Expens]) {
-        self.expenses = expenses.filter{$0.category == category}
-    }
-}
+import RxSwift
 
 class ExpensesVC: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
         createMainView()
+        FinanceViewModel.viewModel.getData(menuType: .expens)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
-        CoreDataManager.coreDataManager.addObserver(self)
-        CoreDataManager.coreDataManager.getData()
-        KeyboardProperties.shared.secondTxtFieldHeit = 80
+        FinanceViewModel.viewModel.secondTxtFieldHeit = 80
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(true)
-        CoreDataManager.coreDataManager.removeObserver(self)
-        KeyboardProperties.shared.secondTxtFieldHeit = 0
+        FinanceViewModel.viewModel.secondTxtFieldHeit = 0
     }
     
-    var expenses: [Expens] = []{
-        didSet{
-            DispatchQueue.main.async {
-                self.expensesTabelView.reloadData()
-                
-            }
-        }
-    }
     
 // MARK:- Properties MainView
     
@@ -50,6 +35,7 @@ class ExpensesVC: UIViewController {
     let adExpensLabel = UILabel()
     var category: ExpensCategory?
     var expens: Expens?
+    let bag = DisposeBag()
     
     
 // MARK:- Creating MainView
@@ -82,8 +68,7 @@ class ExpensesVC: UIViewController {
         
         openButton.addAction(.init(){[weak self]_ in
                                 guard let self = self else {return}
-                                self.openMenuVC(menuMode: .adding)},
-                             for: .touchUpInside)
+                                self.openMenuVC(menuMode: .adding)},for: .touchUpInside)
         openButton.setAttributedTitle(NSAttributedString(string: "+", attributes: TextAttributes.shared.exspensButtonTitleAttributes), for: .normal)
         openButton.layer.backgroundColor = UIColor(red: 0, green: 0.478, blue: 1, alpha: 1).cgColor
         openButton.layer.cornerRadius = 28
@@ -96,9 +81,17 @@ class ExpensesVC: UIViewController {
         }
         
         // MARK:- expensesTabelView
+        FinanceViewModel.viewModel.category = category
+        FinanceViewModel.viewModel.expenses
+            .asObservable()
+            .bind(to: expensesTabelView.rx.items(cellIdentifier: Keyes.shared.expensCell, cellType: ExpensCell.self))
+            {row, model, cell in
+                    cell.expNameLabel.text = model.expensName
+                    cell.dateLabel.text = model.expensDate?.expensDateFormated
+                    cell.expLabel.text = model.expens?.stringWithSeparator
+            }.disposed(by: bag)
         
         expensesTabelView.delegate = self
-        expensesTabelView.dataSource = self
         expensesTabelView.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         expensesTabelView.register(ExpensCell.self, forCellReuseIdentifier: Keyes.shared.expensCell)
         expensesTabelView.rowHeight = 39
@@ -111,15 +104,18 @@ class ExpensesVC: UIViewController {
         }
     }
     
+    // MARK: openMenuVC
+    
     func openMenuVC(menuMode: MenuMode){
         let menuVC = UIStoryboard(name: Keyes.shared.storyBoardIdentifier, bundle: nil).instantiateViewController(withIdentifier: Keyes.shared.menuVCIdentifier) as! MenuVC
         menuVC.modalPresentationStyle = .custom
         menuVC.transitioningDelegate = self
         switch menuMode{
         case .adding:
-            menuVC.createMenuViewes(menuType: .expens, menuMode: menuMode, model: category as Any)
+            menuVC.createMenuViewes(menuType: .expens, menuMode: menuMode)
         case .editing:
-            menuVC.createMenuViewes(menuType: .expens, menuMode: menuMode, model: expens as Any)
+            menuVC.model = expens
+            menuVC.createMenuViewes(menuType: .expens, menuMode: menuMode)
         }
         present(menuVC, animated: true, completion: nil)
     }
@@ -133,18 +129,7 @@ extension ExpensesVC: UIViewControllerTransitioningDelegate {
     }
 }
 
-extension ExpensesVC: UITableViewDelegate, UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return expenses.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = expensesTabelView.dequeueReusableCell(withIdentifier: Keyes.shared.expensCell, for: indexPath) as! ExpensCell
-        cell.expNameLabel.text = expenses[indexPath.row].expensName
-        cell.dateLabel.text = expenses[indexPath.row].expensDate?.expensDateFormated
-        cell.expLabel.text = expenses[indexPath.row].expens?.stringWithSeparator
-        return cell
-    }
+extension ExpensesVC: UITableViewDelegate{
     
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let headerView = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 22))
@@ -184,16 +169,15 @@ extension ExpensesVC: UITableViewDelegate, UITableViewDataSource {
             let deletAction = UIAction(title: "Удалить",
                                        image: UIImage(systemName: Keyes.shared.delete_left),
                                        identifier: nil,
-                                       attributes: .destructive) { [weak self]_ in
-                guard let self = self else {return}
-                        CoreDataManager.coreDataManager.deletData(model: self.expenses[indexPath.row])
+                                       attributes: .destructive) {_ in
+                FinanceViewModel.viewModel.deletData(model: FinanceViewModel.viewModel.coreDataExspenses[indexPath.row], menuType: .expens)
                
             }
             let editAction = UIAction(title: "Редактировать",
                                       image: UIImage(systemName: Keyes.shared.text_redaction),
                                       identifier: nil) {[weak self] _ in
                 guard let self = self else {return}
-                self.expens = self.expenses[indexPath.row]
+                self.expens = FinanceViewModel.viewModel.coreDataExspenses[indexPath.row]
                 self.openMenuVC(menuMode: .editing)
             }
             return UIMenu(children: [deletAction, editAction])

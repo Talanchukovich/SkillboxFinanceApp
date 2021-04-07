@@ -7,42 +7,24 @@
 
 
 import UIKit
-
-extension CategoriesVC: ObserverProtocol {
-    func loadNewData(incomes: [Income], expensCategories: [ExpensCategory], expenses: [Expens]) {
-        categories = expensCategories
-    }
-}
+import RxSwift
 
 class CategoriesVC: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
         createMainView()
+        FinanceViewModel.viewModel.getData(menuType: .expensCategory)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
         navigationController?.isNavigationBarHidden = true
-        CoreDataManager.coreDataManager.addObserver(self)
-        CoreDataManager.coreDataManager.getData()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(true)
         navigationController?.isNavigationBarHidden = false
-        CoreDataManager.coreDataManager.removeObserver(self)
-    }
-
-    // MARK: categories
-    
-    var categories: [ExpensCategory] = [] {
-        didSet{
-            DispatchQueue.main.async {
-                self.categoriesTabelView.reloadData()
-
-            }
-        }
     }
 
     // MARK: Createeng MainView
@@ -54,6 +36,7 @@ class CategoriesVC: UIViewController {
     let openButtonLabel = UILabel()
     private var alertTextfield = UITextField()
     private var category: ExpensCategory?
+    let bag = DisposeBag()
     
    
     func createMainView(){
@@ -62,6 +45,7 @@ class CategoriesVC: UIViewController {
         
         navigationItem.backButtonTitle = ""
        
+        
         // MARK: mainView
         
         view.addSubview(mainView)
@@ -108,11 +92,14 @@ class CategoriesVC: UIViewController {
         
         // MARK: expensesTabelView
         
-        categoriesTabelView.dataSource = self
+        FinanceViewModel.viewModel.expensCategories.asObservable()
+            .bind(to: categoriesTabelView.rx.items(cellIdentifier: Keyes.shared.categoryCell, cellType: CategoryCell.self)){row, model, cell in
+                cell.categoryExpLabel.text = model.categoryName
+                cell.accessoryType = .disclosureIndicator
+                cell.accessoryView = UIImageView(image: UIImage(systemName: Keyes.shared.chevron_forward))
+            }.disposed(by: bag)
         categoriesTabelView.delegate = self
         categoriesTabelView.register(CategoryCell.self, forCellReuseIdentifier: Keyes.shared.categoryCell)
-        
-            
         categoriesTabelView.rowHeight = 64
         categoriesTabelView.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
         mainView.addSubview(categoriesTabelView)
@@ -124,7 +111,7 @@ class CategoriesVC: UIViewController {
             }
         }
     
-    // MARK: func openMenuVC
+    // MARK: openMenuVC
     
     func openMenuVC(menuMode: MenuMode){
         let menuVC = UIStoryboard(name: Keyes.shared.storyBoardIdentifier, bundle: nil).instantiateViewController(withIdentifier: Keyes.shared.menuVCIdentifier) as! MenuVC
@@ -132,9 +119,10 @@ class CategoriesVC: UIViewController {
         menuVC.transitioningDelegate = self
         switch menuMode{
         case .adding:
-            menuVC.createMenuViewes(menuType: .expensCategory, menuMode: menuMode, model: category as Any)
+            menuVC.createMenuViewes(menuType: .expensCategory, menuMode: menuMode)
         case .editing:
-            menuVC.createMenuViewes(menuType: .expensCategory, menuMode: menuMode, model: category as Any)
+            menuVC.model = category
+            menuVC.createMenuViewes(menuType: .expensCategory, menuMode: menuMode)
         }
         present(menuVC, animated: true, completion: nil)
         
@@ -151,19 +139,7 @@ extension CategoriesVC: UIViewControllerTransitioningDelegate {
 
 // MARK: TableViewDataSource
 
-extension CategoriesVC: UITableViewDelegate, UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = categoriesTabelView.dequeueReusableCell(withIdentifier: Keyes.shared.categoryCell) as! CategoryCell
-        cell.accessoryType = .disclosureIndicator
-        cell.accessoryView = UIImageView(image: UIImage(systemName: Keyes.shared.chevron_forward))
-        let categoryCell = categories[indexPath.row]
-        cell.categoryExpLabel.text = categoryCell.categoryName
-        return cell
-    }
+extension CategoriesVC: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         let index = indexPath.row
@@ -172,16 +148,15 @@ extension CategoriesVC: UITableViewDelegate, UITableViewDataSource {
             let deletAction = UIAction(title: "Удалить",
                                        image: UIImage(systemName: Keyes.shared.delete_left),
                                        identifier: nil,
-                                       attributes: .destructive) { [weak self]_ in
-                guard let self = self else {return}
-                CoreDataManager.coreDataManager.deletData(model: self.categories[indexPath.row])
+                                       attributes: .destructive) {_ in
+                FinanceViewModel.viewModel.deletData(model: FinanceViewModel.viewModel.coreDataExpensCategories[indexPath.row], menuType: .expensCategory)
                
             }
             let editAction = UIAction(title: "Редактировать",
                                       image: UIImage(systemName: Keyes.shared.text_redaction),
                                       identifier: nil) {[weak self] _ in
                 guard let self = self else {return}
-                self.category = self.categories[indexPath.row]
+                self.category = FinanceViewModel.viewModel.coreDataExpensCategories[indexPath.row]
                 self.openMenuVC(menuMode: .editing)
             }
             return UIMenu(children: [deletAction, editAction])
@@ -191,7 +166,7 @@ extension CategoriesVC: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         categoriesTabelView.deselectRow(at: indexPath, animated: true)
         let expensesVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "ExpensesVC") as ExpensesVC
-        expensesVC.category = CoreDataManager.coreDataManager.coreDataExpensCategories[indexPath.row]
+        expensesVC.category = FinanceViewModel.viewModel.coreDataExpensCategories[indexPath.row]
         navigationController?.navigationBar.backItem?.title = ""
         navigationController?.pushViewController(expensesVC, animated: true)
     }

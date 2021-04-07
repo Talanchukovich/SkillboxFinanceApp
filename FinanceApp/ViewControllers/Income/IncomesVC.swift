@@ -9,47 +9,17 @@ import UIKit
 import CoreData
 import SnapKit
 import CoreImage
+import RxSwift
+import RxCocoa
 
-extension IncomesVC: ObserverProtocol {
-    func loadNewData(incomes: [Income], expensCategories: [ExpensCategory], expenses: [Expens]) {
-        self.incomes = incomes
-    }
-}
 
 class IncomesVC: UIViewController {
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         createMainView()
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(true)
-        CoreDataManager.coreDataManager.addObserver(self)
-        CoreDataManager.coreDataManager.getData()
-    }
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(true)
-       // IncomeViewModel.incomeViewModel.removeObserver(self)
-        CoreDataManager.coreDataManager.removeObserver(self)
-    }
-    
-// MARK: IncomesData
-    
-   
-    var incomes: [Income] = []{
-        didSet {
-            let balances = incomes.map{Double($0.income?.filtred ?? "")}
-            let sumOfBalances = balances.reduce(0.0) {(tottal, next) in
-                guard let next = next else {return 0}
-                return tottal + next}
-            let screenBalance = String(sumOfBalances).stringWithSeparator
-            DispatchQueue.main.async {[weak self] in
-                guard let self = self else {return}
-                self.incomesTabelView.reloadData()
-                self.balanceLabel.attributedText = NSAttributedString(string: screenBalance, attributes: TextAttributes.shared.balanceLabelAttributes)
-            }
-        }
+        FinanceViewModel.viewModel.getData(menuType: .income)
     }
     
     
@@ -62,6 +32,7 @@ class IncomesVC: UIViewController {
     let button = UIButton()
     var alertTextfield = UITextField()
     var income: Income?
+    let bag = DisposeBag()
     
    
     func createMainView(){
@@ -76,8 +47,11 @@ class IncomesVC: UIViewController {
         }
         
         // MARK: balanceLabel
-    
+        
         view.addSubview(balanceLabel)
+        FinanceViewModel.viewModel.balance.asObservable()
+            .bind(to: balanceLabel.rx.attributedText)
+            .disposed(by: bag)
         balanceLabel.snp.makeConstraints {make in
             make.right.equalToSuperview().offset(-20)
             make.firstBaseline.equalTo(currentLabel)
@@ -112,7 +86,11 @@ class IncomesVC: UIViewController {
         
         // MARK: incomesTabelView
         
-        incomesTabelView.dataSource = self
+        FinanceViewModel.viewModel.incomes.asObservable()
+            .bind(to: incomesTabelView.rx.items(cellIdentifier: Keyes.shared.incomeCell, cellType: IncomeCell.self)){row, model, cell in
+                cell.moneyLabel.text = model.income?.stringWithSeparator
+                cell.dateLabel.text = model.incomeDate?.dateFormated
+            }.disposed(by: bag)
         incomesTabelView.delegate = self
         incomesTabelView.register(IncomeCell.self, forCellReuseIdentifier: Keyes.shared.incomeCell)
         incomesTabelView.rowHeight = 64
@@ -134,18 +112,12 @@ class IncomesVC: UIViewController {
         menuVC.transitioningDelegate = self
         switch menuMode {
         case.adding:
-            menuVC.createMenuViewes(menuType: .income, menuMode: menuMode, model: income as Any)
+            menuVC.createMenuViewes(menuType: .income, menuMode: menuMode)
         case.editing:
-            menuVC.createMenuViewes(menuType: .income, menuMode: menuMode, model: income as Any)
+            menuVC.model = income
+            menuVC.createMenuViewes(menuType: .income, menuMode: menuMode)
         }
         present(menuVC, animated: true, completion: nil)
-    }
-    
-    
-// MARK: Dismiss Alert
-    
-    @objc func tap (){
-        self.dismiss(animated: true, completion: nil)
     }
 }
 
@@ -157,21 +129,9 @@ extension IncomesVC: UIViewControllerTransitioningDelegate {
     }
 }
 
-// MARK: TabelView
+// MARK: UITableViewDelegate
 
-extension IncomesVC: UITableViewDataSource, UITableViewDelegate {
-    
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return incomes.count
-    }
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = incomesTabelView.dequeueReusableCell(withIdentifier: Keyes.shared.incomeCell) as! IncomeCell
-        let cellIncome = incomes[indexPath.row]
-        cell.moneyLabel.text = cellIncome.income?.stringWithSeparator
-        cell.dateLabel.text = cellIncome.incomeDate?.dateFormated
-        return cell
-    }
+extension IncomesVC:  UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
         let index = indexPath.row
@@ -180,27 +140,26 @@ extension IncomesVC: UITableViewDataSource, UITableViewDelegate {
             let deletAction = UIAction(title: "Удалить",
                                        image: UIImage(systemName: Keyes.shared.delete_left),
                                        identifier: nil,
-                                       attributes: .destructive) {[weak self]_ in
-                guard let self = self else {return}
-                CoreDataManager.coreDataManager.deletData(model: self.incomes[indexPath.row])
+                                       attributes: .destructive) {_ in
+                FinanceViewModel.viewModel.deletData(model: FinanceViewModel.viewModel.coreDataIncomes[indexPath.row], menuType: .income)
             }
             let editAction = UIAction(title: "Редактировать",
                                       image: UIImage(systemName: Keyes.shared.text_redaction),
                                       identifier: nil) {[weak self] _ in
                 guard let self = self else {return}
-                self.income = self.incomes[indexPath.row]
+                self.income = FinanceViewModel.viewModel.coreDataIncomes[indexPath.row]
                 self.openMenuVC(menuMode: .editing)
             }
             return UIMenu(children: [deletAction, editAction])
         }
     }
     
- // MARK: UIAlertController
+    // MARK: UIAlertController
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         incomesTabelView.deselectRow(at: indexPath, animated: true)
-        income = incomes[indexPath.row]
+        income = FinanceViewModel.viewModel.coreDataIncomes[indexPath.row]
         let sheet = UIAlertController(title: nil, message: "Отредактируйте или удалите запись", preferredStyle: .actionSheet)
         let alert = UIAlertController(title: "Редактировать", message:  "Введите новую сумму", preferredStyle: .alert)
         alert.addTextField { [weak self] textField in
@@ -223,16 +182,15 @@ extension IncomesVC: UITableViewDataSource, UITableViewDelegate {
      
         let cancelAction = UIAlertAction(title: "Отмена", style: .cancel, handler: nil)
         
-        let deleteAction = UIAlertAction(title: "Удалить", style: .destructive, handler: {[weak self]_ in
-            guard let self = self else {return}
-            CoreDataManager.coreDataManager.deletData(model: self.incomes[indexPath.row])
+        let deleteAction = UIAlertAction(title: "Удалить", style: .destructive, handler: {_ in
+            FinanceViewModel.viewModel.deletData(model: FinanceViewModel.viewModel.coreDataIncomes[indexPath.row], menuType: .income)
         })
         
         let doneAction = UIAlertAction(title: "Готово", style: .default, handler: {[weak self] _ in
             guard let self = self else {return}
             guard let text = self.alertTextfield.text else {return}
             guard let income = self.income else {return}
-            CoreDataManager.coreDataManager.editData(model: income, newName: text, newMoney: "")
+            FinanceViewModel.viewModel.editData(model: income, newName: text, newMoney: "", menuType: .income)
         })
         sheet.addAction(editAction)
         sheet.addAction(cancelAction)
@@ -241,6 +199,12 @@ extension IncomesVC: UITableViewDataSource, UITableViewDelegate {
         
         present(sheet, animated: true, completion: nil)
     }
+    
+    // MARK: Dismiss Alert
+        
+        @objc func tap (){
+            self.dismiss(animated: true, completion: nil)
+        }
 }
 
 // MARK: Textfield delegate
