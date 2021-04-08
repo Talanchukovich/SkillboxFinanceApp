@@ -47,6 +47,7 @@ class ExpensesVC: UIViewController {
         chartButton.setAttributedTitle(NSAttributedString(string: "График платежей", attributes: TextAttributes.shared.buttonTitleAttributes), for: .normal)
         chartButton.layer.backgroundColor = UIColor(red: 0, green: 0.478, blue: 1, alpha: 1).cgColor
         chartButton.layer.cornerRadius = 24
+        chartButton.addTarget(self, action: #selector(openPaymentsChart), for: .touchUpInside)
         view.addSubview(chartButton)
         chartButton.snp.makeConstraints{make in
             make.top.equalTo(view.safeAreaLayoutGuide).offset(22)
@@ -118,6 +119,14 @@ class ExpensesVC: UIViewController {
             menuVC.createMenuViewes(menuType: .expens, menuMode: menuMode)
         }
         present(menuVC, animated: true, completion: nil)
+    }
+    
+    // MARK: openPaymentsChart
+    
+    @objc func openPaymentsChart(){
+        let paymentsChartVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "PymentsChartVC") as PymentsChartVC
+        navigationController?.navigationBar.backItem?.title = "Назад"
+        navigationController?.pushViewController(paymentsChartVC, animated: true)
     }
     
 }

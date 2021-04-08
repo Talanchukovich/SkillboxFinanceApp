@@ -55,6 +55,21 @@
             </objects>
             <point key="canvasLocation" x="681" y="1124"/>
         </scene>
+        <!--Pyments ChartVC-->
+        <scene sceneID="R0f-ja-jSQ">
+            <objects>
+                <viewController storyboardIdentifier="PymentsChartVC" id="WWs-Hg-NWR" customClass="PymentsChartVC" customModule="FinanceApp" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="nYp-fi-rif">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <viewLayoutGuide key="safeArea" id="E1C-oo-8ck"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="fRm-hQ-cbD" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="1395" y="1133"/>
+        </scene>
         <!--Item 2-->
         <scene sceneID="taT-sQ-c2I">
             <objects>

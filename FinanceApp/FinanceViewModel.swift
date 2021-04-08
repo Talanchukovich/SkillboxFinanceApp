@@ -10,6 +10,7 @@ import UIKit
 import CoreData
 import RxSwift
 import RxCocoa
+import Charts
 
 class FinanceViewModel{
     
@@ -21,6 +22,7 @@ class FinanceViewModel{
     lazy var expenses = PublishSubject<[Expens]>()
     lazy var keyboardHeight = PublishRelay<CGFloat>()
     var secondTxtFieldHeit: CGFloat = 0
+    var lineChartData: LineChartData?
     
     // MARK: - Core Data
     
@@ -53,7 +55,14 @@ class FinanceViewModel{
             
             case .expens:
                 coreDataExspenses = try context.fetch(Expens.fetchRequest())
-                expenses.onNext(coreDataExspenses.filter{$0.category == category})
+                let coreDataExspensesFiltred = coreDataExspenses.filter{$0.category == category}
+                expenses.onNext(coreDataExspensesFiltred)
+                
+                let dataEntry = coreDataExspensesFiltred.map{ChartDataEntry(x: Double(coreDataExspensesFiltred.firstIndex(of: $0)!), y: Double($0.expens!.filtred)!, data: $0.expensDate?.dateFormated)}
+                let lineChartDataSet = LineChartDataSet(entries: dataEntry)
+                lineChartData = LineChartData(dataSet: lineChartDataSet)
+              
+                
             }
             
         } catch let error as NSError {
