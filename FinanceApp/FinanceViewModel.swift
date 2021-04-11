@@ -22,7 +22,6 @@ class FinanceViewModel{
     lazy var expenses = PublishSubject<[Expens]>()
     lazy var keyboardHeight = PublishRelay<CGFloat>()
     var secondTxtFieldHeit: CGFloat = 0
-    var lineChartData: LineChartData?
     
     // MARK: - Core Data
     
@@ -54,15 +53,8 @@ class FinanceViewModel{
                 expensCategories.onNext(coreDataExpensCategories)
             
             case .expens:
-                coreDataExspenses = try context.fetch(Expens.fetchRequest())
-                let coreDataExspensesFiltred = coreDataExspenses.filter{$0.category == category}
-                expenses.onNext(coreDataExspensesFiltred)
-                
-                let dataEntry = coreDataExspensesFiltred.map{ChartDataEntry(x: Double(coreDataExspensesFiltred.firstIndex(of: $0)!), y: Double($0.expens!.filtred)!, data: $0.expensDate?.dateFormated)}
-                let lineChartDataSet = LineChartDataSet(entries: dataEntry)
-                lineChartData = LineChartData(dataSet: lineChartDataSet)
-              
-                
+                coreDataExspenses = try context.fetch(Expens.fetchRequest()).filter{$0.category == category}
+                expenses.onNext(coreDataExspenses)
             }
             
         } catch let error as NSError {

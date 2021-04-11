@@ -16,6 +16,8 @@ class Keyes {
     
     let font_SFProDisplay_Medium = "SFProDisplay-Medium"
     let font_HelveticaNeueCyr_Black = "HelveticaNeueCyr-Black"
+   // let font_SFProDisplay_SemiBold = "SFProDisplay-SemiBold"
+    let font_SFProDisplay_SemiBold = "SFProDisplay-Semibold 22."
     
     // MARK: Celles
     
@@ -28,6 +30,7 @@ class Keyes {
     let locale = "RU_ru"
     let dateFormat = "E, d MMMM, yyyy"
     let expensDateFormat = "dd.MM.yy"
+    let chartDateFormat = "dd.MM"
     
     // MARK: SystemImages
     

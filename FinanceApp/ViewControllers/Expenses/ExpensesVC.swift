@@ -19,11 +19,13 @@ class ExpensesVC: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(true)
         FinanceViewModel.viewModel.secondTxtFieldHeit = 80
+        tabBarController?.tabBar.isHidden = true
     }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(true)
         FinanceViewModel.viewModel.secondTxtFieldHeit = 0
+        //tabBarController?.tabBar.isHidden = false
     }
     
     
@@ -124,11 +126,20 @@ class ExpensesVC: UIViewController {
     // MARK: openPaymentsChart
     
     @objc func openPaymentsChart(){
-        let paymentsChartVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "PymentsChartVC") as PymentsChartVC
-        navigationController?.navigationBar.backItem?.title = "Назад"
-        navigationController?.pushViewController(paymentsChartVC, animated: true)
+        let expenses = FinanceViewModel.viewModel.coreDataExspenses
+        switch  expenses.count > 1 {
+        case  true:
+            let paymentsChartVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "PymentsChartVC") as PymentsChartVC
+            navigationController?.navigationBar.backItem?.title = "Назад"
+            navigationController?.pushViewController(paymentsChartVC, animated: true)
+        case false:
+            let alert = UIAlertController(title: "Невозможно построить график", message: "Для построения графика необходимо добавить минимум два расхода", preferredStyle: .alert)
+            let doneAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+            alert.addAction(doneAction)
+            
+            present(alert, animated: true, completion: nil)
+        }
     }
-    
 }
 
 extension ExpensesVC: UIViewControllerTransitioningDelegate {

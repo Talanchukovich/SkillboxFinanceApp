@@ -88,8 +88,15 @@ class TextAttributes {
                                 .foregroundColor: UIColor(red: 1, green: 1, blue: 1, alpha: 1)]
     
     let tabelHeaderLabelsAttributes = [NSAttributedString.Key
-                                        .font: UIFont(name: Keyes.shared.font_HelveticaNeueCyr_Black, size: 13) as Any,
-                                       .kern: 0.13,
-                                       .foregroundColor: UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)]
+                                .font: UIFont(name: Keyes.shared.font_HelveticaNeueCyr_Black, size: 13) as Any,
+                                .kern: 0.13,
+                                .foregroundColor: UIColor(red: 0, green: 0, blue: 0, alpha: 0.5)]
+   
+    let weakButtonTitleAttributes = [NSAttributedString.Key
+                                        .font: UIFont(name: Keyes.shared.font_SFProDisplay_Medium, size: 22) as Any,
+//                                .kern: -0.29,
+//                                .paragraphStyle: paragraphStyle(lineHeightMultiple: 0.99),
+                                .foregroundColor: UIColor(red: 0, green: 0, blue: 0, alpha: 1)]
+    
 }
 

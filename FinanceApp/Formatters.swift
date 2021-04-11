@@ -29,6 +29,13 @@ extension Formatter {
         formatter.locale = Locale(identifier: Keyes.shared.locale)
         return formatter
     }()
+    
+    static let chartDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = Keyes.shared.chartDateFormat
+        formatter.locale = Locale(identifier: Keyes.shared.locale)
+        return formatter
+    }()
 }
 
 extension Numeric {
@@ -43,6 +50,9 @@ extension Date {
     }
     var expensDateFormated: String {
         Formatter.expensDateFormatter.string(from: self)
+    }
+    var chartDateFormated: String {
+        Formatter.chartDateFormatter.string(from: self)
     }
 }
 
@@ -62,3 +72,4 @@ extension String {
          NSAttributedString(string: self, attributes: attributes)
     }
 }
+
